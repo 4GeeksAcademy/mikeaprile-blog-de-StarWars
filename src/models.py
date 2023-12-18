@@ -1,37 +1,36 @@
-import os
-import sys
-from sqlalchemy import Column, ForeignKey, Integer, String
-from sqlalchemy.orm import relationship, declarative_base
-from sqlalchemy import create_engine
 from eralchemy2 import render_er
+from typing import List
+from typing import Optional
+from sqlalchemy import ForeignKey
+from sqlalchemy import String, Integer, Boolean
+from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy.orm import Mapped
+from sqlalchemy.orm import mapped_column
+from sqlalchemy.orm import relationship
 
-Base = declarative_base()
+class Base(DeclarativeBase):
+    pass
 
-class Person(Base):
-    __tablename__ = 'person'
-    # Here we define columns for the table person
-    # Notice that each column is also a normal Python instance attribute.
-    id = Column(Integer, primary_key=True)
-    name = Column(String(250), nullable=False)
+class User(Base):
+    __tablename__ = "user_account"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(30))
+    fullname: Mapped[Optional[str]]
+    addresses: Mapped[List["Address"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
+    )
+    def __repr__(self) -> str:
+        return f"User(id={self.id!r}, name={self.name!r}, fullname={self.fullname!r})"
 
 class Address(Base):
-    __tablename__ = 'address'
-    # Here we define columns for the table address.
-    # Notice that each column is also a normal Python instance attribute.
-    id = Column(Integer, primary_key=True)
-    street_name = Column(String(250))
-    street_number = Column(String(250))
-    post_code = Column(String(250), nullable=False)
-    person_id = Column(Integer, ForeignKey('person.id'))
-    person = relationship(Person)
+    __tablename__ = "address"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    email_address: Mapped[str]
+    user_id: Mapped[int] = mapped_column(ForeignKey("user_account.id"))
+    user: Mapped["User"] = relationship(back_populates="addresses")
+    def __repr__(self) -> str:
+        return f"Address(id={self.id!r}, email_address={self.email_address!r})"
 
-    def to_dict(self):
-        return {}
 
 ## Draw from SQLAlchemy base
-try:
-    result = render_er(Base, 'diagram.png')
-    print("Success! Check the diagram.png file")
-except Exception as e:
-    print("There was a problem genering the diagram")
-    raise e
+result = render_er(Base, 'diagram.png')
