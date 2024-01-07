@@ -1,36 +1,59 @@
+import os
+import sys
+from sqlalchemy import Column, ForeignKey, Integer, String, Boolean
+from sqlalchemy.orm import relationship, declarative_base
+from sqlalchemy import create_engine
 from eralchemy2 import render_er
-from typing import List
-from typing import Optional
-from sqlalchemy import ForeignKey
-from sqlalchemy import String, Integer, Boolean
-from sqlalchemy.orm import DeclarativeBase
-from sqlalchemy.orm import Mapped
-from sqlalchemy.orm import mapped_column
-from sqlalchemy.orm import relationship
 
-class Base(DeclarativeBase):
-    pass
+Base = declarative_base()
 
-class User(Base):
-    __tablename__ = "user_account"
-    id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[str] = mapped_column(String(30))
-    fullname: Mapped[Optional[str]]
-    addresses: Mapped[List["Address"]] = relationship(
-        back_populates="user", cascade="all, delete-orphan"
-    )
-    def __repr__(self) -> str:
-        return f"User(id={self.id!r}, name={self.name!r}, fullname={self.fullname!r})"
+class Users(Base):
+    __tablename__ = 'users'
+    id = Column(Integer, primary_key=True)
+    first_name = Column(String(20), nullable=False)
+    last_name = Column(String(20), nullable=False)
+    email = Column(String, nullable=False, unique=True)
+    subscription_date = Column(String)
+    is_login = Column(Boolean, nullable=False)
 
-class Address(Base):
-    __tablename__ = "address"
-    id: Mapped[int] = mapped_column(primary_key=True)
-    email_address: Mapped[str]
-    user_id: Mapped[int] = mapped_column(ForeignKey("user_account.id"))
-    user: Mapped["User"] = relationship(back_populates="addresses")
-    def __repr__(self) -> str:
-        return f"Address(id={self.id!r}, email_address={self.email_address!r})"
+class Profiles(Base):
+    __tablename__ = 'profiles'
+    id = Column(Integer, primary_key=True)
+    user_name = Column(String(30), nullable=False, unique=True)
+    image_url = Column(String)
+    description = Column(String(200), nullable=False)
+    user_id = Column(Integer, ForeignKey('users.id'), unique=True)
+    user = relationship(Users)
+
+class Posts(Base):
+    __tablename__ = 'posts'
+    id = Column(Integer, primary_key=True)
+    content = Column(String(300), nullable=False)
+    user_id = Column(Integer, ForeignKey('users.id'))
+    user = relationship(Users)
+
+class Followers(Base):
+    __tablename__ = 'followers'
+    id = Column(Integer, primary_key=True)
+    user_followers = Column(Integer, ForeignKey('users.id'))
+    user_following = Column(Integer, ForeignKey('users.id'))
+    followers = relationship(Users)
+    following = relationship(Users)
+
+class Comments(Base):
+    __tablename__ = 'comments'
+    id = Column(Integer, primary_key=True)
+    comment = Column(String(300))
+    post_id = Column(Integer, ForeignKey('posts.id'))
+    author_id = Column(Integer, ForeignKey('users.id'))
+    post = relationship(Posts)
+    user = relationship(Users)
 
 
 ## Draw from SQLAlchemy base
-result = render_er(Base, 'diagram.png')
+try:
+    result = render_er(Base, 'diagram.png')
+    print("Success! Check the diagram.png file")
+except Exception as e:
+    print("There was a problem genering the diagram")
+    raise e
